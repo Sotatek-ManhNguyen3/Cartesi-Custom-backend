@@ -58,35 +58,4 @@ def inspect(payload):
     return {"reports": [{"payload": payload}]}, 200
 
 
-@app.route('/save-data', methods=['POST'])
-def save_data():
-    body = request.get_json("metadata")
-    query = bytes.fromhex(body["payload"][2:])
-    conn = sqlite3.connect('books')
-    conn.row_factory = dict_factory
-    query = query.decode()
-    print(query)
-    with conn:
-        cur = conn.cursor()
-        result = cur.execute(query)
-    if query.strip()[:6].upper() == "SELECT":
-        # result = jsonify(result.fetchall())
-        result = json.dumps(result.fetchall())
-    else:
-        result = "success"
-
-    result = "0x" + result.encode().hex()
-    return result, 202
-
-
-@app.route('/get-data', methods=['GET'])
-def get_data():
-    conn = sqlite3.connect('books')
-    conn.row_factory = dict_factory
-    cur = conn.cursor()
-    all_books = cur.execute('SELECT * FROM books;').fetchall()
-    response = all_books
-    return jsonify(response), 202
-
-
 app.run(port=5003)
