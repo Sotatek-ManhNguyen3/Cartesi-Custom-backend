@@ -15,23 +15,35 @@ def dict_factory(cursor, row):
     return d
 
 
-@app.route('/', methods=['GET'])
-def home():
-    return "<h1>Distant Reading Archive</h1><p>This site is a prototype API for distant reading of science fiction " \
-           "novels.</p> "
+def createTableBook():
+    conn = sqlite3.connect('books.db')
+    conn.row_factory = dict_factory
+    cur = conn.cursor()
+
+    sql_query = "SELECT name FROM sqlite_master WHERE type='table';"
+    result = cur.execute(sql_query)
+    tables = result.fetchall()
+    if len(tables) == 0:
+        print("Books table does not exist")
+        query_create_table = "CREATE TABLE books(id integer NOT NULL, name text NOT NULL, quantity integer NOT NULL);"
+        cur.execute(query_create_table)
+    else:
+        print("Books table exists")
 
 
 @app.route('/advance', methods=['POST'])
 def advance():
-    dispatcher_url = 'http://10.2.14.167:5004'
+    dispatcher_url = 'http://192.168.31.148:5004'
     body = request.get_json("metadata")
     print(f"Received advance request body {body}")
+    createTableBook()
 
     query = bytes.fromhex(body["payload"][2:])
-    conn = sqlite3.connect('books')
+    conn = sqlite3.connect('books.db')
     conn.row_factory = dict_factory
     query = query.decode()
     print(query)
+
     with conn:
         cur = conn.cursor()
         result = cur.execute(query)
@@ -40,11 +52,20 @@ def advance():
     else:
         result = "success"
 
-    print("Adding notice")
-    result = "0x" + result.encode().hex()
     print(result)
+    result = "0x" + result.encode().hex()
+    print("result")
+    print(result)
+    print("Adding notice")
     response = requests.post(dispatcher_url + "/notice", json={"payload": result})
     print(f"Received notice status {response.status_code} body {response.json()}")
+    # print("Adding report")
+    # response = requests.post(dispatcher_url + "/report", json={"payload": result})
+    # print(f"Received report status {response.status_code}")
+    # print("Adding voucher")
+    # address = "0x1111111111111111111111111111111111111111"
+    # response = requests.post(dispatcher_url + "/voucher", json={"payload": result, "address": address})
+    # print(f"Received voucher status {response.status_code}")
     print("Finishing")
     response = requests.post(dispatcher_url + "/finish", json={"status": "accept"})
     print(f"Received finish status {response.status_code}")
