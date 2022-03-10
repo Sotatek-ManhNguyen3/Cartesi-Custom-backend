@@ -44,31 +44,35 @@ def advance():
     query = query.decode()
     print(query)
 
-    with conn:
-        cur = conn.cursor()
-        result = cur.execute(query)
-    if query.strip()[:6].upper() == "SELECT":
-        result = json.dumps(result.fetchall())
-    else:
-        result = "success"
+    try:
+        with conn:
+            cur = conn.cursor()
+            result = cur.execute(query)
+        if query.strip()[:6].upper() == "SELECT":
+            result = json.dumps(result.fetchall())
+        else:
+            result = "success"
+    except Exception as e:
+        result = "EXCEPTION: " + e.__str__()
+        print("NOTICE EXCEPTION" + e.__str__())
 
     print(result)
     result = "0x" + result.encode().hex()
     print("result")
     print(result)
-    print("Adding notice")
-    response = requests.post(dispatcher_url + "/notice", json={"payload": result})
-    print(f"Received notice status {response.status_code} body {response.json()}")
-    # print("Adding report")
-    # response = requests.post(dispatcher_url + "/report", json={"payload": result})
-    # print(f"Received report status {response.status_code}")
-    # print("Adding voucher")
-    # address = "0x1111111111111111111111111111111111111111"
-    # response = requests.post(dispatcher_url + "/voucher", json={"payload": result, "address": address})
-    # print(f"Received voucher status {response.status_code}")
-    print("Finishing")
-    response = requests.post(dispatcher_url + "/finish", json={"status": "accept"})
-    print(f"Received finish status {response.status_code}")
+    # print("Adding notice")
+    # response = requests.post(dispatcher_url + "/notice", json={"payload": result})
+    # print(f"Received notice status {response.status_code} body {response.json()}")
+    # # print("Adding report")
+    # # response = requests.post(dispatcher_url + "/report", json={"payload": result})
+    # # print(f"Received report status {response.status_code}")
+    # # print("Adding voucher")
+    # # address = "0x1111111111111111111111111111111111111111"
+    # # response = requests.post(dispatcher_url + "/voucher", json={"payload": result, "address": address})
+    # # print(f"Received voucher status {response.status_code}")
+    # print("Finishing")
+    # response = requests.post(dispatcher_url + "/finish", json={"status": "accept"})
+    # print(f"Received finish status {response.status_code}")
     return "abc", 202
 
 
