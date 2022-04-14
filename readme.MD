@@ -1,1 +1,1 @@
-FLASK_APP=api.py flask run --host=192.168.31.148 --port=5003
+FLASK_APP=api.py flask run --host=10.2.14.167 --port=5003
