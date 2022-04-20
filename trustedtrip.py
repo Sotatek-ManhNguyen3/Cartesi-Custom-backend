@@ -7,6 +7,8 @@ from lib import picket
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
+dispatcher_url = 'http://10.2.14.53:5004'
+
 
 def isInTheTollZone(gps_data):
     latitude = float(gps_data[2][:2]) + float(gps_data[2][2:]) / 60
@@ -21,13 +23,31 @@ def isInTheTollZone(gps_data):
         if zone['properties']['ZONE_TYPE'] != "Runway Protection Zone":
             continue
 
-        for inner_zone in zone['geometry']['coordinates']:
-            if len(inner_zone) < 3:
-                continue
+        if checkPointInZone(zone['geometry']['coordinates'], latitude, longitude):
+            print("Return true")
+            return True
 
-            fence = create_fence(inner_zone)
-            if fence.check_point((longitude, latitude)):
-                return True
+    print("Return false")
+    return False
+
+
+def checkPointInZone(gps_data, latitude, longitude):
+    print(gps_data[0][0])
+    if type(gps_data[0][0]) in (float, int):
+        if len(gps_data) < 3:
+            print("length is less than 3")
+            return False
+
+        fence = create_fence(gps_data)
+        if fence.check_point((latitude, longitude)):
+            return True
+
+        return False
+
+    for inner_zone in gps_data:
+        is_in_zone = checkPointInZone(inner_zone, latitude, longitude)
+        if is_in_zone:
+            return True
 
     return False
 
@@ -41,9 +61,35 @@ def create_fence(coordinates):
     return fence
 
 
+def to_hex(value):
+    return "0x" + value.encode().hex()
+
+
+def add_notice(message):
+    message = to_hex(message)
+    print("Adding notice")
+    response = requests.post(dispatcher_url + "/notice", json={"payload": message})
+    print(f"Received notice status {response.status_code} body {response.json()}")
+    return True
+
+
+def add_voucher(address, message):
+    message = to_hex(message)
+    print("Adding voucher")
+    response = requests.post(dispatcher_url + "/voucher", json={"payload": message, "address": address})
+    print(f"Received voucher status {response.status_code}")
+    return True
+
+
+def finish():
+    print("Finishing")
+    response = requests.post(dispatcher_url + "/finish", json={"status": "accept"})
+    print(f"Received finish status {response.status_code}")
+    return True
+
+
 @app.route('/advance', methods=['POST'])
 def advance():
-    dispatcher_url = 'http://10.2.14.167:5004'
     body = request.get_json("metadata")
     print(f"Received advance request body {body}")
 
@@ -52,22 +98,19 @@ def advance():
     print(data)
 
     is_toll_zone = isInTheTollZone(data)
+    # is_toll_zone = True
 
     if is_toll_zone:
         result = "You are in the toll zone. You need to pay the fee!!!"
+        address = body["metadata"]["msg_sender"]
+        add_voucher(address, result)
     else:
         result = "You are good"
+        add_notice(result)
 
-    print(result)
-    result = "0x" + result.encode().hex()
     print("result in hex")
     print(result)
-    print("Adding notice")
-    response = requests.post(dispatcher_url + "/notice", json={"payload": result})
-    print(f"Received notice status {response.status_code} body {response.json()}")
-    print("Finishing")
-    response = requests.post(dispatcher_url + "/finish", json={"status": "accept"})
-    print(f"Received finish status {response.status_code}")
+    finish()
     return "", 202
 
 
