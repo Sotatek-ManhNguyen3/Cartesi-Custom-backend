@@ -1,48 +1,27 @@
 import flask
 from flask import request, jsonify
 import requests
-import sqlite3
 import json
+import sqlite3
+from dataService import dict_factory, create_candidates
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
-
-def dict_factory(cursor, row):
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
-
-
-def createTableBook():
-    conn = sqlite3.connect('books.db')
-    conn.row_factory = dict_factory
-    cur = conn.cursor()
-
-    sql_query = "SELECT name FROM sqlite_master WHERE type='table';"
-    result = cur.execute(sql_query)
-    tables = result.fetchall()
-    if len(tables) == 0:
-        print("Books table does not exist")
-        query_create_table = "CREATE TABLE books(id integer NOT NULL, name text NOT NULL, quantity integer NOT NULL);"
-        cur.execute(query_create_table)
-    else:
-        print("Books table exists")
+dispatcher_url = 'http://10.2.14.53:5004'
 
 
 @app.route('/advance', methods=['POST'])
 def advance():
-    dispatcher_url = 'http://192.168.31.148:5004'
     body = request.get_json("metadata")
     print(f"Received advance request body {body}")
-    createTableBook()
+    create_candidates()
+    return "", 202
 
-    query = bytes.fromhex(body["payload"][2:])
+    query = bytes.fromhex(body["payload"][2:]).decode()
+    print(query)
     conn = sqlite3.connect('books.db')
     conn.row_factory = dict_factory
-    query = query.decode()
-    print(query)
 
     try:
         with conn:
@@ -57,22 +36,8 @@ def advance():
         print("NOTICE EXCEPTION" + e.__str__())
 
     print(result)
-    result = "0x" + result.encode().hex()
-    print("result")
-    print(result)
-    # print("Adding notice")
-    # response = requests.post(dispatcher_url + "/notice", json={"payload": result})
-    # print(f"Received notice status {response.status_code} body {response.json()}")
-    # # print("Adding report")
-    # # response = requests.post(dispatcher_url + "/report", json={"payload": result})
-    # # print(f"Received report status {response.status_code}")
-    # # print("Adding voucher")
-    # # address = "0x1111111111111111111111111111111111111111"
-    # # response = requests.post(dispatcher_url + "/voucher", json={"payload": result, "address": address})
-    # # print(f"Received voucher status {response.status_code}")
-    # print("Finishing")
-    # response = requests.post(dispatcher_url + "/finish", json={"status": "accept"})
-    # print(f"Received finish status {response.status_code}")
+    add_notice(result)
+    finish()
     return "abc", 202
 
 
@@ -81,6 +46,25 @@ def inspect(payload):
     print('abcde')
     print(f"Received inspect request payload {payload}")
     return {"reports": [{"payload": payload}]}, 200
+
+
+def to_hex(value):
+    return "0x" + value.encode().hex()
+
+
+def add_notice(message):
+    message = to_hex(message)
+    print("Adding notice")
+    response = requests.post(dispatcher_url + "/notice", json={"payload": message})
+    print(f"Received notice status {response.status_code} body {response.json()}")
+    return True
+
+
+def finish():
+    print("Finishing")
+    response = requests.post(dispatcher_url + "/finish", json={"status": "accept"})
+    print(f"Received finish status {response.status_code}")
+    return True
 
 
 app.run(port=5003)
