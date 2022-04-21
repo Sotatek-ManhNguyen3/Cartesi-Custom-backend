@@ -1,9 +1,76 @@
 import sqlite3
 
 
-def create_candidates():
+def increase_votes(candidate_id):
+    query = 'update candidates set votes = votes + 1 where id = "' + candidate_id + '";'
+    return update_data(query)
+
+
+def vote_candidate(user, candidate_id):
+    query = 'insert into voting_info (user, candidate_id) values ("' + user + '", "' + candidate_id + '");'
+    return update_data(query)
+
+
+def voted_candidate(user):
+    query = 'select * from voting_info where user = "' + user + '"'
+    voted = select_data(query)
+    if len(voted) == 0:
+        return {'error': 'You did not vote yet'}
+
+    return voted[0]
+
+
+def top_candidates(quantity=10):
+    query = "select * from candidates order by votes desc limit " + str(quantity)
+    return select_data(query)
+
+
+def list_all_candidates():
+    query = 'select * from candidates'
+    return select_data(query)
+
+
+def get_candidate_by_id(candidate_id):
+    query = 'select * from candidates where id="' + candidate_id + '"'
+    return select_data(query)
+
+
+def update_data(query):
+    conn = init_conn()
+
+    try:
+        with conn:
+            cur = conn.cursor()
+            cur.execute(query)
+            return {'message': 'Success'}
+    except Exception as e:
+        result = "EXCEPTION: " + e.__str__()
+        print("NOTICE EXCEPTION" + e.__str__())
+        return {'error': result}
+
+
+def select_data(query):
+    conn = init_conn()
+
+    try:
+        with conn:
+            cur = conn.cursor()
+            result = cur.execute(query)
+            return result.fetchall()
+    except Exception as e:
+        result = "EXCEPTION: " + e.__str__()
+        print("NOTICE EXCEPTION" + e.__str__())
+        return result
+
+
+def init_conn():
     conn = sqlite3.connect('voting_system.db')
     conn.row_factory = dict_factory
+    return conn
+
+
+def create_candidates():
+    conn = init_conn()
     cur = conn.cursor()
 
     sql_query = "SELECT name FROM sqlite_master WHERE type='table';"
