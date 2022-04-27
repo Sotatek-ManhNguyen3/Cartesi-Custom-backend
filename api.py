@@ -3,8 +3,8 @@ from flask import request
 import requests
 import json
 import actions
-from dataService import create_candidates, list_all_candidates, top_candidates, voted_candidate
-from votingService import vote
+from dataService import create_base_tables, list_all_candidates, top_candidates, voted_candidate
+from votingService import vote, create_new_campaign
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
@@ -16,7 +16,7 @@ dispatcher_url = 'http://10.2.14.53:5004'
 def advance():
     body = request.get_json("metadata")
     print(f"Received advance request body {body}")
-    create_candidates()
+    create_base_tables()
 
     payload = bytes.fromhex(body["payload"][2:]).decode()
     print(payload)
@@ -30,12 +30,14 @@ def advance():
         result = voted_candidate(body['metadata']['address'])
     elif payload['action'] == actions.VOTE:
         result = vote(body['metadata']['address'], payload['candidate_id'])
+    elif payload['action'] == actions.CREATE_CAMPAIGN:
+        result = create_new_campaign(body['metadata']['address'], payload)
     else:
         result = {}
 
     print(result)
     print("Result type: " + type(result).__name__)
-    # add_notice(result)
+    # add_notice(json.dumps(result))
     # finish()
     return "", 202
 
