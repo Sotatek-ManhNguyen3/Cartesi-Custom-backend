@@ -3,8 +3,8 @@ from flask import request
 import requests
 import json
 import actions
-from dataService import create_base_tables, list_all_candidates, top_candidates, voted_candidate
-from votingService import vote, create_new_campaign
+from dataService import create_base_tables, list_all_candidates, top_candidates
+from votingService import vote, create_new_campaign, get_voted_candidate
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
@@ -23,11 +23,12 @@ def advance():
     payload = json.loads(payload)
 
     if payload['action'] == actions.LIST_ALL:
-        result = list_all_candidates()
+        result = list_all_candidates(payload['campaign_id'])
     elif payload['action'] == actions.TOP_CANDIDATES:
-        result = top_candidates(payload['quantity'])
+        quantity = payload['quantity'] if 'quantity' in payload.keys() else 10
+        result = top_candidates(payload['campaign_id'], quantity)
     elif payload['action'] == actions.VOTED_CANDIDATE:
-        result = voted_candidate(body['metadata']['address'])
+        result = get_voted_candidate(body['metadata']['address'], payload['campaign_id'])
     elif payload['action'] == actions.VOTE:
         result = vote(body['metadata']['address'], payload['candidate_id'])
     elif payload['action'] == actions.CREATE_CAMPAIGN:

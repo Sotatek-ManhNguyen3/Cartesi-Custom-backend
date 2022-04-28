@@ -1,6 +1,11 @@
 import sqlite3
 
 
+def get_campaign(campaign_id):
+    query = 'select * from campaigns where id = ?'
+    return select_data(query, (campaign_id,))
+
+
 def add_candidates(list_candidate):
     query = 'insert into candidates (name, campaign_id, avatar, brief_introduction) values (?, ?, ?, ?)'
     return insert_multiple_data(query, list_candidate)
@@ -12,8 +17,8 @@ def create_campaign(creator, description, start_time, end_time, name):
     if 'error' in result.keys():
         return result
     else:
-        query = 'Select * from campaigns where id = ' + str(result['id'])
-        result['campaign'] = select_data(query)[0]
+        query = 'Select * from campaigns where id = ?'
+        result['campaign'] = select_data(query, (result['id'],))[0]
         return result
 
 
@@ -23,27 +28,27 @@ def increase_votes(candidate_id):
 
 
 def vote_candidate(user, candidate_id):
-    query = 'insert into voting_info (user, candidate_id) values ("' + user + '", "' + candidate_id + '");'
+    query = 'insert into voting (user, candidate_id) values ("' + user + '", "' + candidate_id + '");'
     return update_data(query)
 
 
-def voted_candidate(user):
-    query = 'select * from voting_info where user = "' + user + '"'
-    voted = select_data(query)
+def voted_candidate(user, campaign_id):
+    query = 'select * from voting where user = ? and campaign_id = ?'
+    voted = select_data(query, (user, campaign_id))
     if len(voted) == 0:
         return {'error': 'You did not vote yet'}
 
     return voted[0]
 
 
-def top_candidates(quantity=10):
-    query = "select * from candidates order by votes desc limit " + str(quantity)
-    return select_data(query)
+def top_candidates(campaign_id, quantity=10):
+    query = "select * from candidates where campaign_id=? order by votes desc limit ?"
+    return select_data(query, (campaign_id, quantity))
 
 
-def list_all_candidates():
-    query = 'select * from candidates'
-    return select_data(query)
+def list_all_candidates(campaign_id):
+    query = 'select * from candidates where campaign_id = ?'
+    return select_data(query, (campaign_id,))
 
 
 def get_candidate_by_id(candidate_id):
@@ -65,13 +70,13 @@ def update_data(query):
         return {'error': result}
 
 
-def select_data(query):
+def select_data(query, data):
     conn = init_conn()
 
     try:
         with conn:
             cur = conn.cursor()
-            result = cur.execute(query)
+            result = cur.execute(query, data)
             return result.fetchall()
     except Exception as e:
         result = "EXCEPTION: " + e.__str__()
@@ -135,6 +140,7 @@ def create_base_tables():
                                  "id INTEGER PRIMARY KEY AUTOINCREMENT," \
                                  "name TEXT NOT NULL," \
                                  "campaign_id INTEGER NOT NULL," \
+                                 "votes INTEGER NOT NULL DEFAULT 0," \
                                  "avatar TEXT," \
                                  "brief_introduction TEXT," \
                                  "FOREIGN KEY (campaign_id) REFERENCES campaigns (id))"

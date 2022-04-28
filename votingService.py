@@ -1,4 +1,5 @@
-from dataService import get_candidate_by_id, voted_candidate, vote_candidate, increase_votes, create_campaign, add_candidates
+from dataService import get_candidate_by_id, voted_candidate, vote_candidate, increase_votes, create_campaign, \
+    add_candidates, get_campaign
 
 
 def vote(user, candidate_id):
@@ -44,3 +45,12 @@ def create_new_campaign(creator, payload):
         result = "EXCEPTION: " + e.__str__()
         print("NOTICE EXCEPTION" + e.__str__())
         return {'error': result}
+
+
+def get_voted_candidate(user, campaign_id):
+    campaign = get_campaign(campaign_id)
+    print(campaign)
+    if len(campaign) == 0:
+        return {'error': 'Campaign does not exist'}
+
+    return voted_candidate(user, campaign_id)
