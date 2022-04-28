@@ -30,7 +30,7 @@ def advance():
     elif payload['action'] == actions.VOTED_CANDIDATE:
         result = get_voted_candidate(body['metadata']['address'], payload['campaign_id'])
     elif payload['action'] == actions.VOTE:
-        result = vote(body['metadata']['address'], payload['candidate_id'])
+        result = vote(body['metadata']['address'], payload['candidate_id'], payload['campaign_id'])
     elif payload['action'] == actions.CREATE_CAMPAIGN:
         result = create_new_campaign(body['metadata']['address'], payload)
     else:

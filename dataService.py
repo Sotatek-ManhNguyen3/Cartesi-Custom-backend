@@ -1,3 +1,4 @@
+import datetime
 import sqlite3
 
 
@@ -22,14 +23,14 @@ def create_campaign(creator, description, start_time, end_time, name):
         return result
 
 
-def increase_votes(candidate_id):
-    query = 'update candidates set votes = votes + 1 where id = "' + candidate_id + '";'
-    return update_data(query)
+def increase_votes(candidate_id, campaign_id):
+    query = 'update candidates set votes = votes + 1 where id=? and campaign_id=?'
+    return update_data(query, (candidate_id, campaign_id))
 
 
-def vote_candidate(user, candidate_id):
-    query = 'insert into voting (user, candidate_id) values ("' + user + '", "' + candidate_id + '");'
-    return update_data(query)
+def vote_candidate(user, candidate_id, campaign_id):
+    query = 'insert into voting (candidate_id, campaign_id, user, voting_time) values (?, ?, ?, ?)'
+    return update_data(query, (candidate_id, campaign_id, user, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
 
 
 def voted_candidate(user, campaign_id):
@@ -51,18 +52,18 @@ def list_all_candidates(campaign_id):
     return select_data(query, (campaign_id,))
 
 
-def get_candidate_by_id(candidate_id):
-    query = 'select * from candidates where id="' + candidate_id + '"'
-    return select_data(query)
+def get_candidate(candidate_id, campaign_id):
+    query = 'select * from candidates where id=? and campaign_id=?'
+    return select_data(query, (candidate_id, campaign_id))
 
 
-def update_data(query):
+def update_data(query, data):
     conn = init_conn()
 
     try:
         with conn:
             cur = conn.cursor()
-            cur.execute(query)
+            cur.execute(query, data)
             return {'message': 'Success'}
     except Exception as e:
         result = "EXCEPTION: " + e.__str__()
