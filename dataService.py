@@ -2,6 +2,11 @@ import datetime
 import sqlite3
 
 
+def update_time_campaign(campaign_id, start_time, end_time):
+    query = 'update campaigns set start_time = ?, end_time = ? where id = ?'
+    return update_data(query, (start_time, end_time, campaign_id))
+
+
 def list_campaign():
     query = 'select * from campaigns'
     return select_data(query, ())

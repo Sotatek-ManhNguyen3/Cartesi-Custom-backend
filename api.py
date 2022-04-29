@@ -4,7 +4,7 @@ import requests
 import json
 import actions
 from dataService import create_base_tables, list_all_candidates, top_candidates, list_campaign
-from votingService import vote, create_new_campaign, get_voted_candidate
+from votingService import vote, create_new_campaign, get_voted_candidate, change_time_campaign
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
@@ -35,6 +35,13 @@ def advance():
         result = create_new_campaign(body['metadata']['address'], payload)
     elif payload['action'] == actions.LIST_CAMPAIGN:
         result = list_campaign()
+    elif payload['action'] == actions.CHANGE_TIME_CAMPAIGN:
+        result = change_time_campaign(
+            body['metadata']['address'],
+            payload['campaign_id'],
+            payload['start_time'],
+            payload['end_time']
+        )
     else:
         result = {}
 

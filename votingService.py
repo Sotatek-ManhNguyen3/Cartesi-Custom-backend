@@ -1,7 +1,7 @@
 import datetime
 
 from dataService import get_candidate, voted_candidate, vote_candidate, increase_votes, create_campaign, \
-    add_candidates, get_campaign
+    add_candidates, get_campaign, update_time_campaign
 
 
 def vote(user, candidate_id, campaign_id):
@@ -50,7 +50,6 @@ def create_new_campaign(creator, payload):
 
         campaign = create_campaign(creator, payload['description'],
                                    payload['start_time'], payload['end_time'], payload['name'])
-        print(campaign)
 
         if 'error' in campaign.keys():
             return {'error': campaign}
@@ -74,8 +73,18 @@ def create_new_campaign(creator, payload):
 
 def get_voted_candidate(user, campaign_id):
     campaign = get_campaign(campaign_id)
-    print(campaign)
     if len(campaign) == 0:
         return {'error': 'Campaign does not exist'}
 
     return voted_candidate(user, campaign_id)
+
+
+def change_time_campaign(user_change, campaign_id, start_time, end_time):
+    campaign = get_campaign(campaign_id)
+    if len(campaign) == 0:
+        return {'error': 'Campaign does not exist!'}
+
+    if campaign[0]['creator'] != user_change:
+        return {'error': 'You do not have the permission!'}
+
+    return update_time_campaign(campaign_id, start_time, end_time)
