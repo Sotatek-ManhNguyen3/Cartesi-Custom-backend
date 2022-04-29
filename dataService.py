@@ -2,6 +2,11 @@ import datetime
 import sqlite3
 
 
+def list_campaign():
+    query = 'select * from campaigns'
+    return select_data(query, ())
+
+
 def get_campaign(campaign_id):
     query = 'select * from campaigns where id = ?'
     return select_data(query, (campaign_id,))
